@@ -1,0 +1,9 @@
+rosrun tf view_frames
+
+evince frames.pdf
+
+rosrun rqt_tf_tree rqt_tf_tree
+
+rosrun tf tf_echo [reference_frame] [target_frame]
+
+rosrun rviz rviz

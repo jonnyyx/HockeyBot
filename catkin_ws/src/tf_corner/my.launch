@@ -1,0 +1,89 @@
+<launch>
+
+	<include file="/opt/ros/kinetic/share/turtlebot_bringup/launch/minimal.launch"/>
+
+	<!-- Sensor Nodes -->
+		<!--node pkg="sensor_node_pkg" type="sensor_node_type" name="sensor_node_name" output="screen">
+		<param name="sensor_param" value="param_value" />
+		</node-->
+
+	<!-- RPLidar -->
+		<node pkg="rplidar_ros" type="rplidarNode" name="rplidarNode" output="screen">
+		<param name="serial_port"         type="string" value="/dev/rplidar"/>
+		<param name="serial_baudrate"     type="int"    value="115200"/>
+		<param name="frame_id"            type="string" value="rplidar"/>
+		<param name="inverted"            type="bool"   value="false"/>
+		<param name="angle_compensate"    type="bool"   value="true"/>
+		<remap from="scan" to="scan"/>
+		</node>
+		<arg name="scan_topic" value="/scan" />
+
+	<!-- 3D sensor -->
+		<arg name="3d_sensor" default="$(env TURTLEBOT_3D_SENSOR)"/>  <!-- r200, kinect, asus_xtion_pro -->
+		<include file="$(find turtlebot_bringup)/launch/3dsensor.launch">
+		<arg name="rgb_processing" value="false" />
+		<arg name="depth_registration" value="false" />
+		<arg name="depth_processing" value="false" />
+		</include>
+
+	<!-- Map files -->
+		<!-- Own Map -->
+		<!-- arg name="map_file" default="$(find turtle_stopper)/world/maze.yaml" / -->
+		<!--node name="map_server" pkg="map_server" type="map_server" args="$(arg map_file)" />
+		<respawn="false" />
+		<param name="frame_id" value="/map" />
+		</node-->
+		
+		<!-- Gmapping -->
+		<!-- http://wiki.ros.org/gmapping -->
+		<!-- https://answers.ros.org/question/205404/gmapping-with-navigation/ -->
+		<node pkg="gmapping" type="slam_gmapping" name="slam_gmapping" output="screen">
+		<param name="xmin" value="-1.0"\>
+		<param name="xmax" value="-1.0"\>
+		<param name="ymin" value="-1.0"\>
+		<param name="ymax" value="-1.0"\>
+		<param name="delta" value="0.05"\> <!-- resolution -->
+		</node>
+		<!--arg name="custom_gmapping_launch_file" default="$(find turtlebot_navigation)/launch/includes/gmapping/$(arg 3d_sensor)_gmapping.launch.xml"/>
+		<include file="$(arg custom_gmapping_launch_file)"/-->
+
+	<!-- Position-->
+		<!--node pkg="odom_node_pkg" type="odom_node_type" name="odom_node" output="screen">
+		<param name="odom_param" value="param_value" />
+		</node-->
+		
+		<!-- odom published by http://wiki.ros.org/kobuki_node which is started by minimal.launch -->
+		
+		<!-- frames: http://www.ros.org/reps/rep-0105.html -->
+		
+		<!-- AMCL -->
+		<!-- http://wiki.ros.org/amcl -->
+		<!-- topic amcl_pose -->
+		<arg name="custom_amcl_launch_file" default="$(find turtlebot_navigation)/launch/includes/amcl/$(arg 3d_sensor)_amcl.launch.xml"/>
+		<arg name="initial_pose_x" default="0.0"/> <!-- Use 17.0 for willow's map in simulation -->
+		<arg name="initial_pose_y" default="0.0"/> <!-- Use 17.0 for willow's map in simulation -->
+		<arg name="initial_pose_a" default="0.0"/>
+		<include file="$(arg custom_amcl_launch_file)">
+		<arg name="initial_pose_x" value="$(arg initial_pose_x)"/>
+		<arg name="initial_pose_y" value="$(arg initial_pose_y)"/>
+		<arg name="initial_pose_a" value="$(arg initial_pose_a)"/>
+		</include>
+
+	<!-- tf -->
+		<!-- http://wiki.ros.org/tf -->
+		
+		<!-- static transform from base_link to rplidar -->
+		<!-- x y z yaw pitch roll frame_id child_frame_id period_in_ms -->
+		<node pkg="tf" type="static_transform_publisher" name="lidar_transform_publisher" args="0 0 0.25 3.1415926 0 0 base_link rplidar 100" />
+
+	<!-- Move base -->
+		<remap from="cmd_vel" to="mobile_base/commands/velocity"/>
+		<arg name="custom_param_file" default="$(find turtlebot_navigation)/param/$(arg 3d_sensor)_costmap_params.yaml"/>
+		<include file="$(find turtlebot_navigation)/launch/includes/move_base.launch.xml">
+		<arg name="custom_param_file" value="$(arg custom_param_file)"/>
+		</include>
+
+	<!-- hockey_game node -->
+		<!-- node name="hockey_game" pkg="hockey_game" type="hockey_game" output="screen" /-->
+
+</launch>

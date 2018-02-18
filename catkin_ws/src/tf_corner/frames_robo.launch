@@ -1,0 +1,103 @@
+<launch>
+
+	<include file="/opt/ros/kinetic/share/turtlebot_bringup/launch/minimal.launch"/>
+
+	<!-- RPLidar -->
+		<!-- static transform from base_link to rplidar -->
+		<!-- x y z yaw pitch roll frame_id child_frame_id period_in_ms -->
+		<node pkg="tf" type="static_transform_publisher" name="lidar_transform_publisher" args="0 0 0.25 3.1415926 0 0 base_link rplidar 100" />
+		
+		<node pkg="rplidar_ros" type="rplidarNode" name="rplidarNode" output="screen">
+		<param name="serial_port"         type="string" value="/dev/rplidar"/>
+		<param name="serial_baudrate"     type="int"    value="115200"/>
+		<param name="frame_id"            type="string" value="rplidar"/>
+		<param name="inverted"            type="bool"   value="false"/>
+		<param name="angle_compensate"    type="bool"   value="true"/>
+		<remap from="scan" to="scan"/>
+		</node>
+
+	<!-- Map files and map frame -->
+
+	<!--	kate /opt/ros/kinetic/share/turtlebot_navigation/launch/gmapping_demo.launch
+		kate /opt/ros/kinetic/share/turtlebot_navigation/launch/includes/gmapping/kinect_gmapping.launch.xml-->
+
+		<!-- 3D sensor -->
+		<arg name="3d_sensor" default="$(env TURTLEBOT_3D_SENSOR)"/>  <!-- r200, kinect, asus_xtion_pro -->
+		<include file="$(find turtlebot_bringup)/launch/3dsensor.launch">
+		<arg name="rgb_processing" value="false" />
+		<arg name="depth_registered_processing" value="true" />
+		<arg name="depth_processing" value="true" />
+    
+		<!-- We must specify an absolute topic name because if not it will be prefixed by "$(arg camera)".
+		Probably is a bug in the nodelet manager: https://github.com/ros/nodelet_core/issues/7 --> 
+		<arg name="scan_topic" value="/scan" />
+		</include>
+		<!-- Gmapping -->
+		<arg name="scan_topic"  default="scan" />
+		<arg name="base_frame"  default="base_footprint"/>
+		<arg name="odom_frame"  default="odom"/>
+
+		<node pkg="gmapping" type="slam_gmapping" name="slam_gmapping" output="screen">
+			<param name="base_frame" value="$(arg base_frame)"/>
+			<param name="odom_frame" value="$(arg odom_frame)"/>
+			<param name="map_update_interval" value="5.0"/>
+			<param name="maxUrange" value="6.0"/>
+			<param name="maxRange" value="8.0"/>
+			<param name="sigma" value="0.05"/>
+			<param name="kernelSize" value="1"/>
+			<param name="lstep" value="0.05"/>
+			<param name="astep" value="0.05"/>
+			<param name="iterations" value="5"/>
+			<param name="lsigma" value="0.075"/>
+			<param name="ogain" value="3.0"/>
+			<param name="lskip" value="0"/>
+ 			<param name="minimumScore" value="200"/>
+			<param name="srr" value="0.01"/>
+ 			<param name="srt" value="0.02"/>
+			<param name="str" value="0.01"/>
+			<param name="stt" value="0.02"/>
+ 			<param name="linearUpdate" value="0.5"/>
+ 			<param name="angularUpdate" value="0.436"/>
+ 			<param name="temporalUpdate" value="-1.0"/>
+			<param name="resampleThreshold" value="0.5"/>
+			<param name="particles" value="80"/>
+
+			<param name="xmin" value="-0.5"/>
+			<param name="xmax" value="3.0"/>
+			<param name="ymin" value="-1.5"/>
+			<param name="ymax" value="1.5"/>
+
+			<param name="delta" value="0.05"/> <!-- resolution -->
+			<param name="llsamplerange" value="0.01"/>
+			<param name="llsamplestep" value="0.01"/>
+			<param name="lasamplerange" value="0.005"/>
+			<param name="lasamplestep" value="0.005"/>
+			<remap from="scan" to="$(arg scan_topic)"/>
+		</node>
+
+		<!-- Move base -->
+		<!--include file="$(find turtlebot_navigation)/launch/includes/move_base.launch.xml"/-->
+
+	<!-- Position-->
+		<!--node pkg="odom_node_pkg" type="odom_node_type" name="odom_node" output="screen">
+		<param name="odom_param" value="param_value" />
+		</node-->
+		
+		<!-- odom published by http://wiki.ros.org/kobuki_node which is started by minimal.launch -->
+		
+		<!-- frames: http://www.ros.org/reps/rep-0105.html -->
+
+	<!-- tf -->
+		<!-- http://wiki.ros.org/tf -->
+
+	<!-- Building the tf frames in corners -->
+		<node pkg="tf_corner" type="tf_corner" name="corner1_broad" output="screen" args="corner1" />
+		<node pkg="tf_corner" type="tf_corner" name="corner2_broad" output="screen" args="corner2" />
+		<node pkg="tf_corner" type="tf_corner" name="corner3_broad" output="screen" args="corner3" />
+		<node pkg="tf_corner" type="tf_corner" name="corner4_broad" output="screen" args="corner4" />
+	
+	
+	<param name="IP" value="129.187.240.93 "/>
+	<node name="game" pkg="hockey_game" type="game" output="screen"/>
+
+</launch>
